@@ -35,20 +35,28 @@ namespace pwncheck
         {
             fixed (char* ptr = CompleteHash)
             {
+                ptr[Index] = NibbleToHex((byte)(Value >> (4 * 7)));
+                for (int i = 1; i < 7; i++)
+                {
+                    ptr[Index + i] = NibbleToHex((byte)((Value >> (4 * (7 - i))) & NIBBLE_MASK));
+                }
                 ptr[Index + 7] = NibbleToHex((byte)(Value & NIBBLE_MASK));
-                for (int i = Index + 6; i > Index; i--) { ptr[i] = NibbleToHex((byte)((Value >> 4 * (7 - (i - Index))) & NIBBLE_MASK)); }
-                ptr[Index] = NibbleToHex((byte)((Value >> 4 * 7)));
+
+                /*ptr[Index + 7] = NibbleToHex((byte)(Value & NIBBLE_MASK));
+                for (int i = Index + 6; i > Index; i--) { ptr[i] = NibbleToHex((byte)((Value >> (4 * (7 - (i - Index)))) & NIBBLE_MASK)); }
+                ptr[Index] = NibbleToHex((byte)(Value >> (4 * 7)));*/
             }
         }
 
         public string ToHex()
         {
             string Result = "        " + "        " + "        " + "        " + "        ";
-            UIntToHex(H0, Result, 0);
-            UIntToHex(H1, Result, 8);
-            UIntToHex(H2, Result, 16);
-            UIntToHex(H3, Result, 24);
-            UIntToHex(H4, Result, 32);
+            UIntToHex(25, Result, 0);
+            //UIntToHex(H0, Result, 0);
+            //UIntToHex(H1, Result, 8);
+            //UIntToHex(H2, Result, 16);
+            //UIntToHex(H3, Result, 24);
+            //UIntToHex(H4, Result, 32);
             return Result;
         }
     }

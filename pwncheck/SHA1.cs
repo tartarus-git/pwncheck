@@ -7,16 +7,27 @@
             // Use nothing up my sleeve numbers as starting point.
             Hash160 Hash = new Hash160(0x67452301, 0xEFCDAB89, 0x98BADCFE, 0x10325476, 0xC3D2E1F0);
 
+            ulong BitLength = (ulong)(Message.Length * 16);
+
             // Add a high bit to the end. The zeros will count towards the padding anyway.
             Message += (char)0b1000000000000000;
 
             // Pad so message is divisable by 512.
-            long PaddingLength = 32 - Message.Length % 32;
+            const int ADJUSTED_DIV = 32 - 4;
+            long PaddingLength = ADJUSTED_DIV - Message.Length % ADJUSTED_DIV;
             for (int i = 0; i < PaddingLength; i++) { Message += '\0'; }
+
+            const ulong BIT_LENGTH_MASK = 0b0000000000000000000000000000000000000000000000001111111111111111;
+            Message += (char)(BitLength >> 48);
+            Message += (char)((BitLength >> 32) & BIT_LENGTH_MASK);
+            Message += (char)((BitLength >> 16) & BIT_LENGTH_MASK);
+            Message += (char)(BitLength & BIT_LENGTH_MASK);
+            System.Console.WriteLine(Message);
+            System.Console.WriteLine(Message.Length);
 
             // Go through the message, one 512-bit chunk at a time.
             int ni = 32;
-            for (int i = 0; i < Message.Length; ni += 32, i = ni)
+            for (int i = 0; i < Message.Length; i = ni, ni += 32)
             {
                 // Create 16 words containing two characters each.
                 uint[] Words = new uint[80];
@@ -43,10 +54,10 @@
 
                 void FinishWord(int Index)
                 {
-                    uint temp = ((a << 5) | (a >> 32 - 5)) + f + e + k + Words[Index];
+                    uint temp = ((a << 5) | (a >> (32 - 5))) + f + e + k + Words[Index];
                     e = d;
                     d = c;
-                    c = (b << 30) | (b >> 32 - 30);
+                    c = (b << 30) | (b >> (32 - 30));
                     b = a;
                     a = temp;
                 }
