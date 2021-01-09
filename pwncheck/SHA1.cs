@@ -1,38 +1,43 @@
-﻿namespace pwncheck
+﻿using System.Text;
+
+namespace pwncheck
 {
     static class SHA1
     {
-        public static Hash160 Hash(string Message)
+        public static Hash160 Hash(byte[] Message)
         {
             // Use nothing up my sleeve numbers as starting point.
             Hash160 Hash = new Hash160(0x67452301, 0xEFCDAB89, 0x98BADCFE, 0x10325476, 0xC3D2E1F0);
 
-            ulong BitLength = (ulong)(Message.Length * 16);
-
+            // Pad message while accounting for 64-bit message length so it is divisable by 512.
+            int NewMessageLength = Message.Length + 1 + 8;
+            byte[] PaddedMessage = new byte[NewMessageLength + 64 - NewMessageLength % 64];
             // Add a high bit to the end. The zeros will count towards the padding anyway.
-            Message += (char)0b1000000000000000;
+            PaddedMessage[Message.Length] = 0b10000000;
+            // Copy Message to PaddedMessage.
+            Message.CopyTo(PaddedMessage, 0);
 
-            // Pad so message is divisable by 512.
-            const int ADJUSTED_DIV = 32 - 4;
-            long PaddingLength = ADJUSTED_DIV - Message.Length % ADJUSTED_DIV;
-            for (int i = 0; i < PaddingLength; i++) { Message += '\0'; }
-
-            const ulong BIT_LENGTH_MASK = 0b0000000000000000000000000000000000000000000000001111111111111111;
-            Message += (char)(BitLength >> 48);
-            Message += (char)((BitLength >> 32) & BIT_LENGTH_MASK);
-            Message += (char)((BitLength >> 16) & BIT_LENGTH_MASK);
-            Message += (char)(BitLength & BIT_LENGTH_MASK);
-            System.Console.WriteLine(Message);
-            System.Console.WriteLine(Message.Length);
+            // Add original message length to end as a big-endian (almost, I think) unsigned 64-bit integer.
+            unsafe
+            {
+                ulong BitAmount = (ulong)(Message.Length * 8);
+                byte* ptr = (byte*)&BitAmount;
+                int j = 7;
+                for (int i = 8; i > 0; i--, j--)
+                {
+                    PaddedMessage[PaddedMessage.Length - i] = *(ptr + j);
+                }
+            }
 
             // Go through the message, one 512-bit chunk at a time.
-            int ni = 32;
-            for (int i = 0; i < Message.Length; i = ni, ni += 32)
+            int ni = 64;
+            for (int i = 0; i < PaddedMessage.Length; i = ni, ni += 64)
             {
-                // Create 16 words containing two characters each.
+                // Create 16 words containing 4 characters each.
                 uint[] Words = new uint[80];
                 int WordIndex = 0;
-                for (int j = i; j < ni; j += 2, WordIndex++) { Words[WordIndex] = ((uint)Message[j] << 16) | Message[j + 1]; }
+                for (int j = i; j < ni; j += 4, WordIndex++) { Words[WordIndex] = ((uint)PaddedMessage[j] << 24) | 
+                        ((uint)PaddedMessage[j + 1] << 16) | ((uint)PaddedMessage[j + 2] << 8) | PaddedMessage[j + 3]; }
 
                 // Extend 16 words into 80.
                 for (int j = 16; j < 80; j++)
@@ -72,7 +77,7 @@
                 for (int j = 20; j < 40; j++)
                 {
                     f = b ^ c ^ d;
-                    k = 0x8F1BBCDC;
+                    k = 0x6ED9EBA1;
                     FinishWord(j);
                 }
                 for (int j = 40; j < 60; j++)

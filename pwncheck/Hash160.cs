@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace pwncheck
+﻿namespace pwncheck
 {
     class Hash160
     {
@@ -29,34 +23,33 @@ namespace pwncheck
             return (char)(0x37 + Value);
         }
 
-        const uint NIBBLE_MASK = 0b00000000000000000000000000001111;
+        const byte LEFT_NIBBLE = 0b11110000;
+        const byte RIGHT_NIBBLE = 0b00001111;
 
+        // This modifies the CompleteHash argument.
         unsafe void UIntToHex(uint Value, string CompleteHash, int Index)
         {
             fixed (char* ptr = CompleteHash)
             {
-                ptr[Index] = NibbleToHex((byte)(Value >> (4 * 7)));
-                for (int i = 1; i < 7; i++)
+                byte* ValuePtr = (byte*)&Value;
+                for (byte* EndValuePtr = ValuePtr + 3; EndValuePtr >= ValuePtr; EndValuePtr--, Index += 2)
                 {
-                    ptr[Index + i] = NibbleToHex((byte)((Value >> (4 * (7 - i))) & NIBBLE_MASK));
+                    // Individual bytes don't have endianness because it doesn't make any sense. Bitshifts are abstract, not to the metal.
+                    // Think about this: Bitshifting to the left always multiplies by 2.
+                    ptr[Index] = NibbleToHex((byte)((*EndValuePtr & LEFT_NIBBLE) >> 4));
+                    ptr[Index + 1] = NibbleToHex((byte)(*EndValuePtr & RIGHT_NIBBLE));
                 }
-                ptr[Index + 7] = NibbleToHex((byte)(Value & NIBBLE_MASK));
-
-                /*ptr[Index + 7] = NibbleToHex((byte)(Value & NIBBLE_MASK));
-                for (int i = Index + 6; i > Index; i--) { ptr[i] = NibbleToHex((byte)((Value >> (4 * (7 - (i - Index)))) & NIBBLE_MASK)); }
-                ptr[Index] = NibbleToHex((byte)(Value >> (4 * 7)));*/
             }
         }
 
         public string ToHex()
         {
             string Result = "        " + "        " + "        " + "        " + "        ";
-            UIntToHex(25, Result, 0);
-            //UIntToHex(H0, Result, 0);
-            //UIntToHex(H1, Result, 8);
-            //UIntToHex(H2, Result, 16);
-            //UIntToHex(H3, Result, 24);
-            //UIntToHex(H4, Result, 32);
+            UIntToHex(H0, Result, 0);
+            UIntToHex(H1, Result, 8);
+            UIntToHex(H2, Result, 16);
+            UIntToHex(H3, Result, 24);
+            UIntToHex(H4, Result, 32);
             return Result;
         }
     }
