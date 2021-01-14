@@ -17,7 +17,7 @@ namespace pwncheck
             // Copy Message to PaddedMessage.
             Message.CopyTo(PaddedMessage, 0);
 
-            // Add original message length to end as a big-endian (almost, I think) unsigned 64-bit integer.
+            // Add original message length to end as a big-endian unsigned 64-bit integer.
             unsafe
             {
                 ulong BitAmount = (ulong)(Message.Length * 8);
